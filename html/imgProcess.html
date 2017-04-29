@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+	<meta charset="UTF-8">
+	<title>智能图片处理系统</title>
+    <!-- 
+	<script src="http://cdn.bootcss.com/vue/2.1.8/vue.js"></script>
+    <script src="https://d3js.org/d3.v3.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+     --><!--
+     <script src="js/jquery.min.js">
+	</script>
+	<script src="js/bootstrap.min.js">
+	</script>
+	<link href="js/bootstrap.min.css" rel="stylesheet" type="text/css"> 
+     -->
+    <script src="//apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+	<link href="http://apps.bdimg.com/libs/bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://apps.bdimg.com/libs/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+    <!-- // <script src="http://apps.bdimg.com/libs/jquery/2.0.0/jquery.min.js"></script> -->
+    <link rel="stylesheet" href="//apps.bdimg.com/libs/jqueryui/1.10.4/css/jquery-ui.min.css">
+
+    <link href="./js/bootstrapSwitch.css" rel="stylesheet">
+    <script src="./js/bootstrapSwitch.js" rel="stylesheet"></script>
+
+	<script>
+        function deepCopy(p, c) {
+        	// c = c ||((p.constructor === Array)?[]: {});
+            c = (p.constructor === Array)?[]: {}
+        	for (var i in p) {
+        		if (typeof p[i] === 'object' && p[i] != null) {
+                    if(!(typeof c[i] === 'object' && p[i].constructor==c[i].constructor))
+                    {
+                        c[i] = (p[i].constructor === Array) ? [] : {};
+                    }
+        			c[i]=deepCopy(p[i], c[i]);
+        		} else {
+        			c[i] = p[i];
+        		}
+        	}
+        	return c;
+        }
+        function zip(obj){ // dic.items() in Python
+            var arr = [];
+            for(var item in obj){
+                arr.push([item,obj[item]]);
+            }
+            return arr;
+        }
+        int = parseInt
+        float = parseFloat
+        pow = Math.pow
+        log = console.log
+        logg = (x)=> log(x)||x  // log(x) and return x
+
+        info = console.info
+        table = console.table
+        len= (x)=>x.length
+        str = (x,print,deep)=>{
+            deep = print===undefined?0:deep
+            print=print===undefined?true:print
+            var strr=""
+
+            if(typeof x=='object'){
+                strr+='\n'
+                for (var i in x) {
+                    strr+=range(()=>'  ',deep).join(' ')+i+': '+str(x[i],false,deep+1)+',\n'
+                };
+                strr= strr.slice(0,strr.length-2)
+            }else{
+                strr+=x.toString()
+            }
+            if(print){
+                log(strr)
+            }else{
+                return strr
+            }
+        }
+
+        max=(x)=>{
+            var m=x[0]
+            for (var i = 0; i < x.length; i++) {
+                m=x[i]>m?x[i]:m
+            };
+            return m
+        }
+        rn = (x)=>int(x*Math.random())
+        sum = (arr)=>{
+                var summ = 0
+                for (var i in arr){
+                        summ += arr[i]
+                }
+                return summ
+        }
+        function range (f,n,max) {
+        	// 1.Python 用法
+        	// 2.执行 f(n['property']) 并返回新的 [] 或 {}
+        	// range(10) =>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        	// range(x=>x*2,5,10) =>[10, 12, 14, 16, 18]
+        	// range(x=>x+x,['a', 'b', 'c'])
+        	// =>["aa", "bb", "cc"]
+
+        	var flag = (typeof f == "number")
+
+        	if(flag){
+        		max =(typeof n == "number")?n:max
+        		n = f
+        		f = x=>x
+        	}
+        	var items = n
+        	var obj = (n.constructor === Array)?[]:{}
+        	if(typeof n == "number"){
+        		obj = []
+        		items = []
+        		var i=max?n:0
+        		max=max||n
+        		while(i!=max){items.push(i);i++}
+        	}
+
+         	for (var i in items) {
+         		obj[i]=f(items[i])
+         	}
+         	return obj
+         }
+
+         encodeJson = JSON.stringify
+         decodeJson = JSON.parse
+
+         window.requstingTags={} // 记录哪些Ajax正在请求
+         getJson = (key, obj, callBack,tag)=>{  
+         // 配合flask中的函数使用 
+         // 调用sever端的key(obj)函数 并执行callBack
+         // tag 为string 将用于阻塞重复tag的请求
+            var f = callBack
+            if(tag){
+                if(typeof tag != 'string')tag = key;
+                if(window.requstingTags[tag]&&window.requstingTags[tag].blocked){
+                    window.requstingTags[tag].next = obj
+                    return; // tag为true,则阻塞 return
+                }else{
+                    window.requstingTags[tag] = window.requstingTags[tag]?window.requstingTags[tag]:{}
+                    window.requstingTags[tag].blocked = true
+                    window.requstingTags[tag].next = obj
+                    f = (d)=>{
+                        callBack(d)
+                        window.requstingTags[tag].blocked = false
+                        if(!(obj===window.requstingTags[tag].next)){
+                            // log('obj',obj);
+                            // log('next',window.requstingTags[tag].next)
+                            getJson(key, window.requstingTags[tag].next, callBack,tag)
+                        }
+                    }
+                }
+            }
+            var tmp = {}
+            tmp[key] = obj
+            // log(tmp,obj)
+            $.getJSON('/getJson/'+JSON.stringify(tmp),
+                null,
+                f
+                )
+            }
+        String.prototype.replaceAll = function (exp, newStr) {
+            return this.replace(new RegExp(exp, "gm"), newStr);
+        };
+        String.prototype.format = function(args) {
+            var result = this;
+            if (arguments.length < 1) {
+                return result;
+            }
+
+            var data = arguments;        //如果模板参数是数组
+            if (arguments.length == 1 && typeof (args) == "object") {
+                //如果模板参数是对象
+                data = args;
+            }
+            for (var key in data) {
+                var value = data[key];
+                if (undefined != value) {
+                    result = result.replaceAll("{" + key + "}", value);
+                }
+            }   
+            return result;
+        }
+    	</script>
+    <style>
+        body{
+            background: #333333;
+            height: 1500px;
+        }
+        .imgBox{
+          width: 500px;
+          height: 500px;
+          background: #666666;
+          display: inline-block;
+        }
+        .inline{
+            display: inline-block;
+        }
+        .controlBar{
+            width: 80%;
+            margin-bottom: 30px;
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+
+<body >
+        <nav class="navbar navbar-default" role="navigation" style="width:">
+            <div class="container-fluid">
+            <div class="navbar-header">
+
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">智能图片处理系统</a>
+                </div>
+            </div>
+            <div >
+                <ul class="nav navbar-nav" >
+                    <li data=0 id="autoClick" classs="active" onclick="javascript:changTag(this)"><a href="#">图像处理及滤波</a></li>
+                    <li data=1  onclick="javascript:changTag(this)"><a href="#">seamCarving</a></li>
+                    <li data=2 onclick="javascript:changTag(this);getJson('getKinds',null,setChecks)"><a href="#">智能去除目标</a></li>
+                    <li data=3 onclick="javascript:changTag(this);getHed()"><a href="#">mulit scale网络预测边缘</a></li>
+                </ul>
+            </div>
+            </div>
+        </nav>
+    <center>
+        <div>
+            <div id='imgPanel' style="">
+              <div id="resImg" class="imgBox ">
+              </div>
+              <div id="rawImg" class="imgBox ">
+              </div>
+            </div>
+        </div>
+
+<!--         <div id="editSwitch" class="switch " data-on="warning" data-on-label="显著区域" data-off-label="背景">
+            
+            <input  type="checkbox" >
+        </div> -->
+        <br>
+        <div id="bigControlBars">
+            <div>
+                <div id='hisPanel' style="">
+                  <div id="resHis" class="inline ">
+                  </div>
+                  <div id="rawHis" class="inline ">
+                  </div>
+                </div>
+            </div>
+            <br>
+            <button id="switchUseSal" class="btn btn-info" onclick="javascript:switchUseSal()" style="display:block">switchUseSal</button>
+            <br>
+            <button id="switchBg" class="btn btn-info noSalGroup" onclick="javascript:switchBg()" style="display:inline">切换到背景模式</button>
+            <div id="controlBars">
+                <div id="colorControlBars" class="" style="width:1000px">
+                    <h4 style="color:#ffffff" class="noSalGroup">当前为显著模式</h4>
+                    <div id="colorControlBars1" class="panel panel-default col-md-6"></div>
+                    <div id="colorControlBars2" class="panel panel-default col-md-6"></div>
+                    <div id="controlBarTemple" style="display:none;">
+                        <div id="{name}" class="controlBar">
+                            <p>
+                              <label for="{name}-amount">{name}</label>
+                              <input type="number" id="{name}-amount" style="border:0; color:#f6931f; font-weight:bold;">
+                            </p>
+                            <div id="{name}-slider" class="slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="bgColorControlBars"   class="noSalGroup" style="width:1000px;display:;" >
+                    <h4 style="color:#ffffff" >当前为背景模式</h4>
+                    <div id="bgColorControlBars1" class="panel panel-default col-md-6"></div>
+                    <div id="bgColorControlBars2" class="panel panel-default col-md-6"></div>
+                    <div id="bgControlBarTemple" style="display:none;">
+                        <div id="{name}" class="controlBar">
+                            <p>
+                              <label for="{name}-amount-bg">{name}</label>
+                              <input type="number" id="{name}-amount-bg" style="border:0; color:#f6931f; font-weight:bold;">
+                            </p>
+                            <div id="{name}-slider-bg" class="slider"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="bigDelScBar" class="" style="width:500px">
+            <div id="delScBar" class="panel panel-default col-md-12">
+                <div class="form-horizontal" role="form" sstyle="background:#ffffff;width:1000px">
+                  <br>
+                  <div class="form-group">
+                    <label for="firstname" class="col-sm-2 control-label">deln</label>
+                    <div class="col-sm-10">
+                      <input type="number" class="form-control" id="deln" placeholder="输入删除的条数">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                      <div class="checkbox">
+                        <label>
+                          <input id="isRow" type="checkbox">删除row(默认为col)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                      <div class="checkbox">
+                        <label>
+                          <input id="isSal" type="checkbox">使用显著性
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                      <button type="submit" class="btn btn-default" onclick="javascript:delSc()">开始seamCarving</button>
+                    </div>
+                  </div>
+                  <br>
+                </div>
+            </div>
+        </div>
+        <div id="bigScBars" class="" style="width:500px">       
+            <div id="scBars" class="panel panel-default col-md-12">
+            </div>
+            <button id="delKinds" class="btn btn-info" onclick="javascript:delKinds()" style="display:block">智能删除已选择的对象</button>
+        </div>
+        <div id="bigHedBars" class="" style="width:500px">       
+            <div id="hedBars" class="panel panel-default col-md-12">
+                基于caffe的多尺度神经网络进行边缘检测
+                HED https://github.com/s9xie/hed
+            </div>
+        </div>
+    </center>
+</body>
+
+<script>
+    var jsCssRequest = [
+        "./js/imgProcess.js",
+        ]
+    function setJsCssRequest (x) {
+        var js = document.createElement( "script" )
+        js.src = x + '?' + Math.random()
+        document.body.appendChild(js)
+    }
+    jsCssRequest.map(setJsCssRequest)
+
+
+
+</script>
+
+<script>
+
+</script>
+
+</html>

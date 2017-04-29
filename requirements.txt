@@ -1,0 +1,12 @@
+Flask==0.11.1
+matplotlib==1.5.3
+scikit_image==0.12.3
+imageio==2.1.2
+numpy==1.11.1
+Flask_SocketIO==2.8.4
+scipy==0.18.1
+cv2==1.0
+hpelm==1.0.4
+matlab==0.1
+mlab==1.1.4
+scikit_learn==0.18.1

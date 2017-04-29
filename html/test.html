@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jQuery UI 滑块（Slider） - 带有固定最大值的范围</title>
+  <link rel="stylesheet" href="http://apps.bdimg.com/libs/jqueryui/1.10.4/css/jquery-ui.min.css">
+  <script src="http://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+  <script src="http://apps.bdimg.com/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+  <script>
+        function deepCopy(p, c) {
+            // c = c ||((p.constructor === Array)?[]: {});
+            c = (p.constructor === Array)?[]: {}
+            for (var i in p) {
+                if (typeof p[i] === 'object' && p[i] != null) {
+                    if(!(typeof c[i] === 'object' && p[i].constructor==c[i].constructor))
+                    {
+                        c[i] = (p[i].constructor === Array) ? [] : {};
+                    }
+                    c[i]=deepCopy(p[i], c[i]);
+                } else {
+                    c[i] = p[i];
+                }
+            }
+            return c;
+        }
+        function zip(obj){ // dic.items() in Python
+            var arr = [];
+            for(var item in obj){
+                arr.push([item,obj[item]]);
+            }
+            return arr;
+        }
+        int = parseInt
+        float = parseFloat
+        pow = Math.pow
+        log = console.log
+        logg = (x)=> log(x)||x  // log(x) and return x
+
+        info = console.info
+        table = console.table
+        len= (x)=>x.length
+        str = (x,print,deep)=>{
+            deep = print===undefined?0:deep
+            print=print===undefined?true:print
+            var strr=""
+
+            if(typeof x=='object'){
+                strr+='\n'
+                for (var i in x) {
+                    strr+=range(()=>'  ',deep).join(' ')+i+': '+str(x[i],false,deep+1)+',\n'
+                };
+                strr= strr.slice(0,strr.length-2)
+            }else{
+                strr+=x.toString()
+            }
+            if(print){
+                log(strr)
+            }else{
+                return strr
+            }
+        }
+
+        max=(x)=>{
+            var m=x[0]
+            for (var i = 0; i < x.length; i++) {
+                m=x[i]>m?x[i]:m
+            };
+            return m
+        }
+        rn = (x)=>int(x*Math.random())
+        sum = (arr)=>{
+                var summ = 0
+                for (var i in arr){
+                        summ += arr[i]
+                }
+                return summ
+        }
+        function range (f,n,max) {
+            // 1.Python 用法
+            // 2.执行 f(n['property']) 并返回新的 [] 或 {}
+            // range(10) =>[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            // range(x=>x*2,5,10) =>[10, 12, 14, 16, 18]
+            // range(x=>x+x,['a', 'b', 'c'])
+            // =>["aa", "bb", "cc"]
+
+            var flag = (typeof f == "number")
+
+            if(flag){
+                max =(typeof n == "number")?n:max
+                n = f
+                f = x=>x
+            }
+            var items = n
+            var obj = (n.constructor === Array)?[]:{}
+            if(typeof n == "number"){
+                obj = []
+                items = []
+                var i=max?n:0
+                max=max||n
+                while(i!=max){items.push(i);i++}
+            }
+
+            for (var i in items) {
+                obj[i]=f(items[i])
+            }
+            return obj
+         }
+
+         encodeJson = JSON.stringify
+         decodeJson = JSON.parse
+
+         window.requstingTags={} // 记录哪些Ajax正在请求
+         getJson = (key, obj, callBack,tag)=>{  
+         // 配合flask中的函数使用 
+         // 调用sever端的key(obj)函数 并执行callBack
+         // tag 为string 将用于阻塞重复tag的请求
+            var f = callBack
+            if(tag){
+                if(typeof tag != 'string')tag = key;
+                if(window.requstingTags[tag]&&window.requstingTags[tag].blocked){
+                    window.requstingTags[tag].next = obj
+                    return; // tag为true,则阻塞 return
+                }else{
+                    window.requstingTags[tag] = window.requstingTags[tag]?window.requstingTags[tag]:{}
+                    window.requstingTags[tag].blocked = true
+                    f = (d)=>{
+                        callBack(d)
+                        window.requstingTags[tag].blocked = false
+                        if(!(obj===window.requstingTags[tag].next)){
+                            // log(['obj',obj]);
+                            // log(['next',window.requstingTags[tag].next])
+                            getJson(key, window.requstingTags[tag].next, callBack,tag)
+                        }
+                    }
+                }
+            }
+            var tmp = {}
+            tmp[key] = obj
+            $.getJSON('/getJson/'+JSON.stringify(tmp),
+                null,
+                f
+                )
+            }
+        </script>
+    
+  <script>
+
+  </script>
+</head>
+<body>
+<div id="controlBars">
+</div>
+<div id="controlBarTemple" style="display:none;">
+    <div id="{name}">
+        <p>
+          <label for="{name}-amount">{name}</label>
+          <input type="text" id="{name}-amount" style="border:0; color:#f6931f; font-weight:bold;">
+        </p>
+        <div id="{name}-slider"></div>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+String.prototype.replaceAll = function (exp, newStr) {
+    return this.replace(new RegExp(exp, "gm"), newStr);
+};
+String.prototype.format = function(args) {
+    var result = this;
+    if (arguments.length < 1) {
+        return result;
+    }
+
+    var data = arguments;        //如果模板参数是数组
+    if (arguments.length == 1 && typeof (args) == "object") {
+        //如果模板参数是对象
+        data = args;
+    }
+    for (var key in data) {
+        var value = data[key];
+        if (undefined != value) {
+            result = result.replaceAll("{" + key + "}", value);
+        }
+    }   
+    return result;
+}
+
+var controlBarTemple = $('#controlBarTemple')[0].innerHTML
+var controlBars =[
+    {
+        name:'亮度',
+        value:0,
+        max:5,
+        min:-5,
+    },
+    {
+        name:'亮度2',
+        value:0,
+        max:5,
+        min:-5,
+    }
+]
+for(var bar of controlBars){
+    var div = controlBarTemple.format({name:bar.name})
+    $("#controlBars")[0].append($(div)[0])
+    // $("#controlBars")[0].append($(div)[0])
+    bar.step = (bar.max-bar.min)/50
+
+    var getSlide=(name)=>{
+        var slide=(e, v)=>{
+            $("#"+name+"-amount").val( v.value );
+            log(e,v,name)
+        }
+        return slide
+    }
+    bar.slide = getSlide(bar.name)
+    $("#"+bar.name+"-slider").slider(bar)
+    $( "#"+bar.name+"-amount" ).val( $( "#"+bar.name+"-slider" ).slider( "value" ) );
+}
+    $( "#slider-range-max" ).slider({
+      range: "max",
+      min: 0.5,
+      max: 2,
+      step: 0.05,
+      value:1,
+      slide: function( event, ui ) {
+        $( "#amount" ).val( ui.value );
+        log(event,ui)
+      }
+    });
+    $( "#amount" ).val( $( "#slider-range-max" ).slider( "value" ) );
+
+</script>
+</html>
