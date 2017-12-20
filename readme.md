@@ -30,6 +30,7 @@
 
 ![](./imgs/forMarkdown/2016.04.29-seamCarving1.png)
 
+### 智能去除目标
 * 结合一个基于caffe的精细语义分割方法 [`SEC`](https://github.com/kolesman/SEC) 能将语义信息与seam carving 结合 实现智能去除目标
 
 ![](./imgs/forMarkdown/2016.04.29-seamCarving2.png)
