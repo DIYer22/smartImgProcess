@@ -4,7 +4,7 @@
 
 > E-mail：`ylxx@live.com`
 
-> Data：`2017-04-30`
+> Date：`2017-04-30`
 
 > Description：手工实现的智能图片处理系统 包含基础的图片处理功能 各类滤波 seam carving算法 以及结合精细语义分割信息 实现智能去除目标的功能
 
